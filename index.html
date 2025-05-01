@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Juego: Palabras de Sabiduría</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;700&family=Quicksand:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Quicksand', sans-serif;
+            background: linear-gradient(135deg, #fff0f5 0%, #ffe4e9 100%); /* Fondo degradado rosa muy suave */
+        }
+        .game-title {
+            font-family: 'Dancing Script', cursive;
+            color: #c72c6c; /* Rosa oscuro */
+        }
+        .game-card {
+            background-color: rgba(255, 255, 255, 0.9); /* Blanco semi-transparente */
+            backdrop-filter: blur(8px);
+            border-radius: 1rem;
+            padding: 2rem;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(249, 168, 212, 0.6); /* Borde rosa translúcido */
+            max-width: 500px;
+            margin: 2rem auto;
+        }
+        .btn-primary {
+            background-color: #ec4899; /* Rosa vibrante */
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 9999px;
+            font-weight: 600; /* Un poco más de peso */
+            transition: background-color 0.3s ease, transform 0.1s ease;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(236, 72, 153, 0.3);
+        }
+        .btn-primary:hover {
+            background-color: #d81b60;
+        }
+         .btn-primary:active {
+            transform: scale(0.97);
+        }
+         .btn-primary:disabled {
+            background-color: #fbcfe8; /* Rosa pálido deshabilitado */
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        /* Estilos para las letras */
+        .letter-scrambled-container, .letter-answer-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px; /* Espacio entre letras */
+            min-height: 50px; /* Para que no colapse si está vacío */
+            padding: 10px;
+            border-radius: 0.5rem;
+        }
+         .letter-scrambled-container {
+             background-color: #fdf2f8; /* Rosa muy pálido */
+             border: 1px dashed #f9a8d4;
+         }
+         .letter-answer-container {
+             background-color: #fce7f3; /* Rosa un poco más oscuro */
+             border: 1px solid #fbcfe8;
+         }
+
+        .letter-box {
+            font-family: 'Quicksand', sans-serif;
+            font-weight: 700;
+            font-size: 1.5rem; /* Tamaño de letra más grande */
+            color: #831843; /* Rosa muy oscuro */
+            background-color: #ffffff;
+            border: 2px solid #f9a8d4; /* Borde rosa */
+            padding: 8px 12px;
+            border-radius: 6px;
+            min-width: 40px; /* Ancho mínimo */
+            text-align: center;
+            cursor: pointer;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+            user-select: none; /* Evitar selección de texto */
+        }
+        .letter-box:hover {
+            background-color: #fff0f5; /* Rosa extra pálido al pasar */
+            transform: translateY(-2px);
+        }
+        .letter-box:active {
+            transform: scale(0.95);
+        }
+        .letter-box.used { /* Estilo para letras ya usadas */
+            opacity: 0.4;
+            cursor: not-allowed;
+            background-color: #f8fafc; /* Gris muy claro */
+            border-color: #e2e8f0;
+        }
+        .letter-box.in-answer { /* Estilo para letras en la respuesta */
+             cursor: default;
+             border-color: #ec4899; /* Borde rosa vibrante */
+        }
+        .letter-box.in-answer:hover {
+            transform: none; /* No levantar al pasar el mouse */
+            background-color: #ffffff;
+        }
+
+        /* Mensajes de feedback */
+        #feedback-message {
+            min-height: 2rem; /* Espacio para el mensaje */
+            font-weight: 600;
+            margin-top: 1rem;
+            margin-bottom: 1rem;
+        }
+        .feedback-correct {
+            color: #16a34a; /* Verde */
+        }
+        .feedback-incorrect {
+            color: #dc2626; /* Rojo */
+        }
+
+    </style>
+</head>
+<body class="p-4">
+
+    <div class="game-card text-center">
+        <h1 class="game-title text-4xl md:text-5xl mb-2">Palabras de Sabiduría</h1>
+        <p class="text-gray-600 mb-6 italic">"Abre su boca con sabiduría..." - Prov. 31:26</p>
+
+        <div class="mb-4">
+            <p class="text-lg text-gray-700 mb-2">Ordena las letras para formar la virtud:</p>
+            <div id="letter-scrambled-container" class="letter-scrambled-container mb-4">
+                </div>
+        </div>
+
+        <div class="mb-4">
+            <p class="text-sm text-gray-500 mb-2">Tu respuesta:</p>
+             <div id="letter-answer-container" class="letter-answer-container">
+                </div>
+        </div>
+
+        <div id="feedback-message" class="text-lg">&nbsp;</div>
+
+        <div class="mt-6 space-x-4">
+             <button id="clear-button" class="btn-secondary">Borrar</button>
+            <button id="next-word-button" class="btn-primary" disabled>Siguiente</button>
+        </div>
+
+         <div id="final-screen" class="hidden mt-6 p-4 bg-pink-50 rounded-lg border border-pink-300">
+            <h2 class="text-2xl font-semibold text-pink-700 mb-3">¡Juego Completado!</h2>
+            <p class="text-gray-700 mb-4">Has reflexionado sobre estas importantes virtudes.</p>
+            <p class="font-semibold text-pink-600">¡Sigue cultivándolas cada día!</p>
+            <button id="play-again-button" class="btn-primary mt-4">Jugar de Nuevo</button>
+        </div>
+
+    </div>
+
+    <script>
+        // --- Lista de Palabras (Virtudes) ---
+        // Asegúrate de que estén en mayúsculas para consistencia
+        const VIRTUE_WORDS = ["FUERZA", "HONOR", "SABIDURIA", "BONDAD", "DILIGENCIA", "TRABAJO", "VALOR", "VERDAD", "CONFIANZA"];
+        let availableWords = []; // Copia para poder quitar palabras usadas
+        let currentWord = "";
+        let scrambledLetters = []; // Array de objetos { letter: 'A', id: 0, used: false }
+        let currentAnswer = []; // Array de objetos { letter: 'A', originalId: 0 }
+
+        // --- Elementos del DOM ---
+        const scrambledContainer = document.getElementById('letter-scrambled-container');
+        const answerContainer = document.getElementById('letter-answer-container');
+        const feedbackMessage = document.getElementById('feedback-message');
+        const clearButton = document.getElementById('clear-button');
+        const nextWordButton = document.getElementById('next-word-button');
+        const finalScreen = document.getElementById('final-screen');
+        const playAgainButton = document.getElementById('play-again-button');
+        const gameCard = document.querySelector('.game-card'); // Para ocultar/mostrar
+
+        // --- Funciones del Juego ---
+
+        /**
+         * Baraja (desordena) un array usando el algoritmo Fisher-Yates.
+         * @param {Array} array - El array a barajar.
+         * @returns {Array} El array barajado.
+         */
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]]; // Intercambio de elementos
+            }
+            return array;
+        }
+
+        /**
+         * Inicia una nueva ronda con una nueva palabra.
+         */
+        function loadNewWord() {
+            // Si no quedan palabras, termina el juego
+            if (availableWords.length === 0) {
+                showFinalScreen();
+                return;
+            }
+
+            // Seleccionar y quitar una palabra al azar de las disponibles
+            const wordIndex = Math.floor(Math.random() * availableWords.length);
+            currentWord = availableWords[wordIndex];
+            availableWords.splice(wordIndex, 1); // Quitar la palabra usada
+
+            // Preparar letras desordenadas con IDs únicos
+            const letters = currentWord.split('');
+            scrambledLetters = letters.map((letter, index) => ({
+                letter: letter,
+                id: index, // ID único para cada letra original
+                used: false
+            }));
+            shuffleArray(scrambledLetters); // Desordenar
+
+            // Limpiar estado anterior
+            currentAnswer = [];
+            feedbackMessage.textContent = '\u00A0'; // Espacio en blanco para mantener altura
+            feedbackMessage.className = ''; // Limpiar clases de color
+            nextWordButton.disabled = true; // Deshabilitar hasta que se resuelva
+
+            renderLetters(); // Mostrar las letras en la UI
+        }
+
+        /**
+         * Muestra las letras desordenadas y la respuesta actual en la UI.
+         */
+        function renderLetters() {
+            // Renderizar letras desordenadas
+            scrambledContainer.innerHTML = ''; // Limpiar
+            scrambledLetters.forEach(item => {
+                const letterDiv = document.createElement('div');
+                letterDiv.textContent = item.letter;
+                letterDiv.classList.add('letter-box');
+                letterDiv.dataset.id = item.id; // Guardar el ID original
+                if (item.used) {
+                    letterDiv.classList.add('used');
+                } else {
+                    // Añadir listener solo si no está usada
+                    letterDiv.addEventListener('click', handleLetterClick);
+                }
+                scrambledContainer.appendChild(letterDiv);
+            });
+
+            // Renderizar respuesta actual
+            answerContainer.innerHTML = ''; // Limpiar
+            currentAnswer.forEach(item => {
+                const letterDiv = document.createElement('div');
+                letterDiv.textContent = item.letter;
+                letterDiv.classList.add('letter-box', 'in-answer');
+                // Opcional: Podríamos añadir un listener aquí para quitar letras de la respuesta
+                answerContainer.appendChild(letterDiv);
+            });
+        }
+
+        /**
+         * Maneja el clic en una letra desordenada.
+         * @param {Event} event - El evento de clic.
+         */
+        function handleLetterClick(event) {
+            const clickedId = parseInt(event.target.dataset.id);
+
+            // Encontrar la letra correspondiente en scrambledLetters
+            const letterItem = scrambledLetters.find(item => item.id === clickedId);
+
+            if (letterItem && !letterItem.used) {
+                // Marcar como usada
+                letterItem.used = true;
+                // Añadir a la respuesta
+                currentAnswer.push({ letter: letterItem.letter, originalId: letterItem.id });
+                // Re-renderizar para actualizar estado visual
+                renderLetters();
+                // Comprobar si la respuesta está completa
+                checkAnswer();
+            }
+        }
+
+        /**
+         * Comprueba si la respuesta actual coincide con la palabra objetivo.
+         */
+        function checkAnswer() {
+            if (currentAnswer.length === currentWord.length) {
+                const userAnswer = currentAnswer.map(item => item.letter).join('');
+                if (userAnswer === currentWord) {
+                    feedbackMessage.textContent = "¡Correcto! ✨";
+                    feedbackMessage.className = 'feedback-correct'; // Clase para color verde
+                    nextWordButton.disabled = false; // Habilitar botón siguiente
+                    // Deshabilitar clics en letras restantes (aunque no debería haber)
+                    scrambledLetters.forEach(item => item.used = true);
+                    renderLetters(); // Actualizar visualmente
+                } else {
+                    feedbackMessage.textContent = "Inténtalo de nuevo.";
+                    feedbackMessage.className = 'feedback-incorrect'; // Clase para color rojo
+                    // Permitir borrar para corregir (no habilitar 'Siguiente')
+                }
+            }
+        }
+
+        /**
+         * Limpia la respuesta actual y restablece las letras usadas.
+         */
+        function clearAnswer() {
+            currentAnswer = []; // Vaciar respuesta
+            // Marcar todas las letras como no usadas de nuevo
+            scrambledLetters.forEach(item => item.used = false);
+            feedbackMessage.textContent = '\u00A0'; // Limpiar mensaje
+            feedbackMessage.className = '';
+            nextWordButton.disabled = true; // Deshabilitar 'Siguiente'
+            renderLetters(); // Re-renderizar
+        }
+
+        /**
+         * Muestra la pantalla final del juego.
+         */
+         function showFinalScreen() {
+             gameCard.style.display = 'none'; // Ocultar tarjeta principal del juego
+             finalScreen.classList.remove('hidden'); // Mostrar pantalla final
+         }
+
+         /**
+         * Reinicia el juego desde el principio.
+         */
+         function restartGame() {
+             finalScreen.classList.add('hidden'); // Ocultar pantalla final
+             gameCard.style.display = 'block'; // Mostrar tarjeta del juego
+             availableWords = [...VIRTUE_WORDS]; // Rellenar palabras disponibles
+             loadNewWord(); // Cargar la primera palabra
+         }
+
+
+        // --- Inicialización del Juego ---
+        clearButton.addEventListener('click', clearAnswer);
+        nextWordButton.addEventListener('click', loadNewWord);
+        playAgainButton.addEventListener('click', restartGame);
+
+        // Iniciar el juego al cargar la página
+        restartGame();
+
+    </script>
+
+</body>
+</html>
